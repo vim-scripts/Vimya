@@ -1,0 +1,10 @@
+This is a mirror of http://www.vim.org/scripts/script.php?script_id=2626
+
+Vimya can be used to execute the contents of a Vim buffer (or the current visual selection) in Autodesk Maya. The plugin will save the commands to be executed in a temporary file and tell Maya via the command port to source this file. Both MEL and Python scripts are supported, Maya's log can optionally be opened in a separate tab in Vim (requires the Tail Bundle plugin vimscript #1714).
+
+Important: You need a Vim version with built-in Python support to run this plugin!
+
+* news about this plugin: http://ntworks.net/vimya/index.html
+* or as Atom feed: http://ntworks.net/vimya/index.atom
+* the source code is also available at Gitorious: http://gitorious.org/vimya
+* bug tracker: http://code.ntworks.net/Vimya
