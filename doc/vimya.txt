@@ -161,6 +161,16 @@ Contents                                                        *vimya*
    location of the temporary files depends on your system, see the
    Python documentation on 'tempfile.mkstemp' for details.
 
+   Note: Since version 0.2 the plugin keeps track of all temporary
+   files and tries to delete them when leaving Vim, since deleting
+   with Maya's own commands did not always work. Additionally, when
+   leaving Vim the command
+>
+        cmdFileOutput -closeAll
+<
+   is sent to Maya, which will close all open log files, before the
+   plugin tries to delete the log file.
+
    The timeout for the communication with Maya is set to 5 seconds,
    which should be enough for connections to the localhost or to
    machines in the LAN, and there is currently no option to change
@@ -183,6 +193,9 @@ Contents                                                        *vimya*
 
 7. Changelog                                          *vimya-changelog*
 
+   2009/12/27   * bug fixed: backslash characters in paths are now
+                  replaced by slashes, should now work on Windows
+		* temporary file deletion should be more reliable now
    2009/05/06   * first public version
 
 =======================================================================
