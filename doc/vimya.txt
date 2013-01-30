@@ -17,12 +17,12 @@ Contents                                                        *vimya*
 
 1. Overview                                            *vimya-overview*
 
-   Vimya can be used to execute the contents of a Vim buffer (or the
-   current visual selection) in Autodesk Maya. The plugin will save the
-   commands to be executed in a temporary file and tell Maya via the
-   command port to source this file. Both MEL and Python scripts are
-   supported, Maya's log can optionally be opened in a separate tab in
-   Vim.
+   Vimya can be used to execute the contents of a Vim buffer, the
+   current visual selection, or a single command in Autodesk Maya. The
+   plugin will save the command(s) to be executed in a temporary file
+   and tell Maya via the command port to source this file. Both MEL and
+   Python scripts are supported, Maya's log can optionally be opened in
+   a separate tab in Vim.
 
 =======================================================================
 
@@ -112,7 +112,7 @@ Contents                                                        *vimya*
    The Vimya plugin defines the following Python function for public
    use:
 >
-        sendBufferToMaya (forceBuffer = False)
+        sendBufferToMaya (forceBuffer = False, userCmd = None)
 <
    If you call this function with
 >
@@ -138,10 +138,19 @@ Contents                                                        *vimya*
    a selection starts or ends in the middle of a line, this complete
    line will be executed!
 
-   It is suggested to map these two commands to keyboard shortcuts, the
-   default mappings are shown above. If you set up your own mappings,
-   the default mappings will not be created. See |key-mapping| for
-   details. (Note: If you create one mapping for this function, you
+   If you explicitely specify a command, ie.
+>
+        :py sendBufferToMaya (userCmd = "<some command>")
+<
+   the buffer content (and visual selection) is ignored, and this
+   command is used instead. Obviously, the forceBuffer parameter is also
+   ignored in this case. Note that the comamnd will still be written to
+   the temporary file first, and then this file will be sourced.
+
+   It is suggested to map the commands you need to keyboard shortcuts,
+   the default mappings are shown above. If you set up your own
+   mappings, the default mappings will not be created. See |key-mapping|
+   for details. (Note: If you create one mapping for this function, you
    need to create the other mappings even if you want them to be the
    defaults!)
 
@@ -193,9 +202,12 @@ Contents                                                        *vimya*
 
 7. Changelog                                          *vimya-changelog*
 
+   2013/01/29   * added userCmd parameter to sendBufferToMaya(), thanks
+                  to Gary Fixler for the patch
+                * changed version number to 0.3
    2009/12/27   * bug fixed: backslash characters in paths are now
                   replaced by slashes, should now work on Windows
-		* temporary file deletion should be more reliable now
+                * temporary file deletion should be more reliable now
    2009/05/06   * first public version
 
 =======================================================================

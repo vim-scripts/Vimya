@@ -14,7 +14,7 @@
 " You should have received a copy of the GNU General Public License along with
 " this program. If not, see <http://www.gnu.org/licenses/>.
 "
-" Vimya 0.1 - Execute buffer contents as MEL or Python scripts in Autodesk Maya
+" Vimya 0.3 - Execute buffer contents as MEL or Python scripts in Autodesk Maya
 "
 " Help is available in doc/vimya.txt or from within Vim with :help vimya. See
 " the help file or the end of this file for license information.
@@ -23,7 +23,7 @@
 if exists ('g:loadedVimya') || &cp || ! has ('python')
     finish
 endif
-let g:loadedVimya = '0.2'
+let g:loadedVimya = '0.3'
 
 """
 " Configuration variables:
@@ -125,16 +125,17 @@ def __vimyaErrorMsg (message):
     vim.command ('echohl None')
     return False
 
-# sendBufferToMaya (forceBuffer = False):
+# sendBufferToMaya (forceBuffer = False, userCmd = None):
 #
-# Saves the buffer (or a part of it) to a temporary file and instructs Maya to
-# source this file. In visual mode only the selected lines are used, else the
-# complete buffer. In visual mode, forceBuffer may be set to True to force
-# executing the complete buffer. If selection starts (or ends) in the middle of
-# a line, the complete line is included! Returns False if an error occured,
-# else True.
+# If userCmd is not specified, saves the buffer (or a part of it) to a temporary
+# file and instructs Maya to source this file. In visual mode only the selected
+# lines are used, else the complete buffer. In visual mode, forceBuffer may be
+# set to True to force executing the complete buffer. If selection starts (or
+# ends) in the middle of a line, the complete line is included! If userCmd is
+# specified, this command will be written to the file sourced by Maya, and the
+# buffer content will be ignored. Returns False if an error occured, else True.
 
-def sendBufferToMaya (forceBuffer = False):
+def sendBufferToMaya (forceBuffer = False, userCmd = None):
 
     global logPath, setLog, tempFiles
 
@@ -161,14 +162,17 @@ def sendBufferToMaya (forceBuffer = False):
         )
     tempFiles.append (tmpPath)
 
-    vStart = vim.current.buffer.mark ('<')
-    if (vStart is None) or (forceBuffer):
-        for line in vim.current.buffer:
-            os.write (tmpHandle, "%s\n" % line)
+    if userCmd:
+        os.write (tmpHandle, "%s\n" % userCmd)
     else:
-        vEnd = vim.current.buffer.mark ('>')
-        for line in vim.current.buffer [vStart [0] - 1 : vEnd [0]]:
-            os.write (tmpHandle, "%s\n" % line)
+        vStart = vim.current.buffer.mark ('<')
+        if (vStart is None) or (forceBuffer):
+            for line in vim.current.buffer:
+                os.write (tmpHandle, "%s\n" % line)
+        else:
+            vEnd = vim.current.buffer.mark ('>')
+            for line in vim.current.buffer [vStart [0] - 1 : vEnd [0]]:
+                os.write (tmpHandle, "%s\n" % line)
     os.close (tmpHandle)
 
     try:
