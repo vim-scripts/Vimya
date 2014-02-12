@@ -1,5 +1,6 @@
 """
-" Coypright 2009 by Stefan Goebel <mail@ntworks.net> - <http://ntworks.net/>
+"
+" Coypright 2009, 2013-2014 Stefan Goebel.
 "
 " This program is free software: you can redistribute it and/or modify it under
 " the terms of the GNU General Public License as published by the Free Software
@@ -14,16 +15,20 @@
 " You should have received a copy of the GNU General Public License along with
 " this program. If not, see <http://www.gnu.org/licenses/>.
 "
-" Vimya 0.3 - Execute buffer contents as MEL or Python scripts in Autodesk Maya
+"""
+
+"""
 "
-" Help is available in doc/vimya.txt or from within Vim with :help vimya. See
-" the help file or the end of this file for license information.
+" Vimya 0.4 - Execute buffer contents as MEL or Python scripts in Autodesk Maya
+"
+" Help is available in doc/vimya.txt or from within Vim with :help vimya.
+"
 """
 
 if exists ('g:loadedVimya') || &cp || ! has ('python')
     finish
 endif
-let g:loadedVimya = '0.3'
+let g:loadedVimya = '0.4'
 
 """
 " Configuration variables:
@@ -43,6 +48,14 @@ endif
 
 if ! exists ('g:vimyaShowLog')
     let g:vimyaShowLog = 1
+endif
+
+if ! exists ('g:vimyaTempDir')
+    let g:vimyaTempDir = ''
+endif
+
+if ! exists ('g:vimyaTailCommand')
+    let g:vimyaTailCommand = 'TabTail'
 endif
 
 """
@@ -74,8 +87,8 @@ import socket
 import tempfile
 import vim
 
-logPath = ''
-setLog = 0
+logPath   = ''
+setLog    = 0
 tempFiles = []
 
 # __vimyaRemoveLog ():
@@ -127,7 +140,7 @@ def __vimyaErrorMsg (message):
 
 # sendBufferToMaya (forceBuffer = False, userCmd = None):
 #
-# If userCmd is not specified, saves the buffer (or a part of it) to a temporary
+# If userCmd is not specified, saves the buffer (or a part of it) to a temp
 # file and instructs Maya to source this file. In visual mode only the selected
 # lines are used, else the complete buffer. In visual mode, forceBuffer may be
 # set to True to force executing the complete buffer. If selection starts (or
@@ -142,9 +155,16 @@ def sendBufferToMaya (forceBuffer = False, userCmd = None):
     type        = vim.eval ('&g:ft')
     defaultType = vim.eval ('g:vimyaDefaultFiletype')
     host        = vim.eval ('g:vimyaHost')
+    tempDir     = vim.eval ('g:vimyaTempDir')
+    tailCommand = vim.eval ('g:vimyaTailCommand')
     port        = int (vim.eval ('g:vimyaPort'))
     tail        = int (vim.eval ('g:vimyaUseTail'))
     showLog     = int (vim.eval ('g:vimyaShowLog'))
+
+    if tempDir:
+        tempfile.tempdir = tempDir
+    else:
+        tempfile.tempdir = None
 
     if type != '' and type != 'python' and type != 'mel':
         return __vimyaErrorMsg (
@@ -191,7 +211,7 @@ def sendBufferToMaya (forceBuffer = False, userCmd = None):
             connection.send (
                     "cmdFileOutput -o \"%s\";\n" % logPath.replace ('\\', '/')
                 )
-            vim.command ("TabTail %s" % logPath)
+            vim.command ("%s %s" % (tailCommand, logPath))
             setLog = 0
 
         connection.send ("commandEcho -state on -lineNumbers on;\n")
@@ -219,6 +239,5 @@ def sendBufferToMaya (forceBuffer = False, userCmd = None):
     return True
 
 EOP
-
 
 " vim: set et si nofoldenable ft=python sts=4 sw=4 tw=79 ts=4 fenc=utf8 :
