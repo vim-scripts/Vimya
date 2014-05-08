@@ -58,6 +58,18 @@ if ! exists ('g:vimyaTailCommand')
     let g:vimyaTailCommand = 'TabTail'
 endif
 
+if ! exists('g:vimyaSplitBelow')
+    let g:vimyaSplitBelow = &splitbelow
+endif
+
+if ! exists('g:vimyaRefreshWait')
+    let g:vimyaRefreshWait = 2.0
+endif
+
+if ! exists('g:vimyaForceRefresh')
+    let g:vimyaForceRefresh = 1
+endif
+
 """
 " Mappings:
 """
@@ -86,6 +98,7 @@ import os
 import socket
 import tempfile
 import vim
+import time
 
 logPath   = ''
 setLog    = 0
@@ -160,6 +173,9 @@ def sendBufferToMaya (forceBuffer = False, userCmd = None):
     port        = int (vim.eval ('g:vimyaPort'))
     tail        = int (vim.eval ('g:vimyaUseTail'))
     showLog     = int (vim.eval ('g:vimyaShowLog'))
+    splitbelow  = int (vim.eval ('g:vimyaSplitBelow'))
+    wait        = float (vim.eval('g:vimyaRefreshWait'))
+    refresh     = int (vim.eval('g:vimyaForceRefresh'))
 
     if tempDir:
         tempfile.tempdir = tempDir
@@ -211,7 +227,12 @@ def sendBufferToMaya (forceBuffer = False, userCmd = None):
             connection.send (
                     "cmdFileOutput -o \"%s\";\n" % logPath.replace ('\\', '/')
                 )
-            vim.command ("%s %s" % (tailCommand, logPath))
+            sb = int(vim.eval('&splitbelow'))
+            vim.command ("set %ssplitbelow" % ("" if splitbelow else "no"))
+            try:
+                vim.command ("%s %s" % (tailCommand, logPath))
+            finally:
+                vim.command ("set %ssplitbelow" % ("" if sb else "no"))
             setLog = 0
 
         connection.send ("commandEcho -state on -lineNumbers on;\n")
@@ -227,6 +248,10 @@ def sendBufferToMaya (forceBuffer = False, userCmd = None):
         connection.send (
                 "sysFile -delete \"%s\";\n" % tmpPath.replace ('\\', '/')
             )
+
+        if showLog and tail and refresh:
+            time.sleep(wait)
+            vim.command('call tail#Refresh()')
 
     except:
         return __vimyaErrorMsg ('Could not send the commands to Maya.')
