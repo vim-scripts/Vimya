@@ -58,6 +58,18 @@ if ! exists ('g:vimyaTailCommand')
     let g:vimyaTailCommand = 'TabTail'
 endif
 
+if ! exists('g:vimyaSplitBelow')
+    let g:vimyaSplitBelow = &splitbelow
+endif
+
+if ! exists('g:vimyaRefreshWait')
+    let g:vimyaRefreshWait = 2.0
+endif
+
+if ! exists('g:vimyaForceRefresh')
+    let g:vimyaForceRefresh = 1
+endif
+
 """
 " Mappings:
 """
@@ -67,6 +79,15 @@ if ! hasmapto ('sendBufferToMaya')
     vnoremap <leader>sm :py sendBufferToMaya ()<cr>
     nnoremap <leader>sb :py sendBufferToMaya (True)<cr>
     vnoremap <leader>sb :py sendBufferToMaya (True)<cr>
+endif
+
+if ! hasmapto ('vimyaPing')
+    nnoremap <leader>sr :py vimyaPing (0)<cr>
+    nnoremap <leader>st :py vimyaPing (1)<cr>
+    nnoremap <leader>sl :py vimyaPing (2)<cr>
+    vnoremap <leader>sr :py vimyaPing (0)<cr>
+    vnoremap <leader>st :py vimyaPing (1)<cr>
+    vnoremap <leader>sl :py vimyaPing (2)<cr>
 endif
 
 """
@@ -86,6 +107,7 @@ import os
 import socket
 import tempfile
 import vim
+import time
 
 logPath   = ''
 setLog    = 0
@@ -160,6 +182,9 @@ def sendBufferToMaya (forceBuffer = False, userCmd = None):
     port        = int (vim.eval ('g:vimyaPort'))
     tail        = int (vim.eval ('g:vimyaUseTail'))
     showLog     = int (vim.eval ('g:vimyaShowLog'))
+    splitbelow  = int (vim.eval ('g:vimyaSplitBelow'))
+    wait        = float (vim.eval('g:vimyaRefreshWait'))
+    refresh     = int (vim.eval('g:vimyaForceRefresh'))
 
     if tempDir:
         tempfile.tempdir = tempDir
@@ -206,13 +231,20 @@ def sendBufferToMaya (forceBuffer = False, userCmd = None):
         return __vimyaErrorMsg ('Could not connect to the command port.')
 
     try:
+        goback = 0
 
         if setLog == 1:
             connection.send (
                     "cmdFileOutput -o \"%s\";\n" % logPath.replace ('\\', '/')
                 )
-            vim.command ("%s %s" % (tailCommand, logPath))
+            sb = int(vim.eval('&splitbelow'))
+            vim.command ("set %ssplitbelow" % ("" if splitbelow else "no"))
+            try:
+                vim.command ("%s %s" % (tailCommand, logPath))
+            finally:
+                vim.command ("set %ssplitbelow" % ("" if sb else "no"))
             setLog = 0
+            goback = 1 
 
         connection.send ("commandEcho -state on -lineNumbers on;\n")
         if type == 'python' or (type == '' and defaultType == 'python'):
@@ -228,6 +260,12 @@ def sendBufferToMaya (forceBuffer = False, userCmd = None):
                 "sysFile -delete \"%s\";\n" % tmpPath.replace ('\\', '/')
             )
 
+        if showLog and tail and refresh:
+            if goback: 
+                vim.command("wincmd p")
+            time.sleep(wait)
+            __refreshTail()
+
     except:
         return __vimyaErrorMsg ('Could not send the commands to Maya.')
 
@@ -238,6 +276,61 @@ def sendBufferToMaya (forceBuffer = False, userCmd = None):
 
     return True
 
-EOP
 
+def vimyaPing(opt=0):
+    ''' wrapper for refresh and reset functions '''
+    if opt==1:
+        __resetVimyaTail()
+    elif opt==2:
+        __resetVimyaLog()
+    else:
+        __refreshTail()
+
+
+def __refreshTail():
+    ''' Refresh the contents of the vimya Tail '''
+    tail = int (vim.eval ('g:vimyaUseTail'))
+    try:
+        vim.command('call tail#Refresh()')
+    except:
+        if logPath and tail:
+            if not setLog:
+                __resetVimyaTail()
+            else:
+                __resetVimyaLog()
+        vim.command('call tail#Refresh()')
+
+def __resetVimyaTail():
+    ''' if the log file exists make another preview window '''
+    tail = int (vim.eval ('g:vimyaUseTail'))
+    splitbelow = int(vim.eval('g:vimyaSplitBelow'))
+    tailCommand = vim.eval('g:vimyaTailCommand')
+    global setLog
+    if tail:
+        vim.command('pclose')
+        sb = int(vim.eval('&splitbelow'))
+        vim.command ("set %ssplitbelow" % ("" if splitbelow else "no"))
+        try:
+            vim.command ("%s %s" % (tailCommand, logPath))
+        finally:
+            vim.command ("set %ssplitbelow" % ("" if sb else "no"))
+        setLog = 0
+        vim.command("wincmd p")
+        return True
+    return False
+
+def __resetVimyaLog():
+    ''' Generate new log file and make Maya write there '''
+    tail = int (vim.eval ('g:vimyaUseTail'))
+    if tail:
+        __vimyaRemoveLog()
+        vim.command('pclose')
+        global logPath, setLog
+        logPath=''
+        setLog=1
+        sendBufferToMaya(userCmd='print "Vimya log file was reset";')
+        return True
+    return False
+
+EOP
 " vim: set et si nofoldenable ft=python sts=4 sw=4 tw=79 ts=4 fenc=utf8 :
