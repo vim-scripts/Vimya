@@ -111,6 +111,19 @@ Contents                                                        *vimya*
         the system's default temporary path will be used, as determined
         by Python's 'tempfile' library. See there for details.
 
+   g:vimyaSplitBelow - number (default &splitbelow)
+       if 'STail' command is used in g:vimyaTailCommand. You can set
+       this value to always splitbelow. This will not affect the global
+       'splitbelow' settings.
+
+   g:vimyaForceRefresh - number (default 1)
+       Setting this value will cause vimya tail to refresh every time
+       the send buffer command is used with the tail option enabled.
+
+   g:vimyaRefreshWait - number (default 2.0)
+       The number of seconds vimya should wait before forcing a tail
+       refresh to allow maya time to write back to the log file
+
    Example setting in your |.vimrc| file:
 >
         let vimyaPort=54321
@@ -122,6 +135,13 @@ Contents                                                        *vimya*
         vnoremap <leader>sm :py sendBufferToMaya ()<cr>
         nnoremap <leader>sb :py sendBufferToMaya (True)<cr>
         vnoremap <leader>sb :py sendBufferToMaya (True)<cr>
+
+        nnoremap <leader>sr :py vimyaPing (0)<cr>
+        nnoremap <leader>st :py vimyaPing (1)<cr>
+        nnoremap <leader>sl :py vimyaPing (2)<cr>
+        vnoremap <leader>sr :py vimyaPing (0)<cr>
+        vnoremap <leader>st :py vimyaPing (1)<cr>
+        vnoremap <leader>sl :py vimyaPing (2)<cr>
 
    See |vimya-usage| below for details on these function.
 
@@ -181,6 +201,20 @@ Contents                                                        *vimya*
    Vim, unless this behaviour is disabled by setting the variable
    'g:vimyaShowLog' to 0. See |:TabTail| or |:Tail| if installed.
 
+   The following function can be used to reset or refresh the tail
+
+        :py vimyaPing (opt = 0)
+
+   Pass opt value for different effect as described below:
+
+   -----------------------------------------------------------
+    Value |  Function
+   -------+--------------------------------------------------
+      0   |  Forced refreshes the tail window.
+      1   |  Recreates the tail window if it had been closed
+      2   |  Sets up a new log file
+   ----------------------------------------------------------
+
    All temporary files are deleted automatically. The files sourced by
    Maya will be deleted by Maya itself: after the command to source the
    file the
@@ -225,6 +259,8 @@ Contents                                                        *vimya*
 
 7. Changelog                                          *vimya-changelog*
 
+   2014/05/08   * added options to facilitate logging in split window
+                * added refresh and reset tail functions with mappings
    2014/02/11   * added the vimyaTempDir and vimyaTailCommand options,
                   thanks to Claude Ronin
                 * minor updates to the documentation
